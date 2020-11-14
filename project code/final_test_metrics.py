@@ -1,6 +1,6 @@
 ###############################################################################
 ''' Import Libraries '''
-from SIHelperMethods import preprocess, evaluate, evaluate_svm, csv_to_params
+from helper_functions import preprocess, evaluate, evaluate_svm, csv_to_params
 import pandas as pd
 import pickle
 
