@@ -9,8 +9,8 @@ from helper_functions import evaluate_svm
 ###############################################################################
 ''' Load + Preprocess Data '''
 #load datasets
-train_df = pd.read_csv('train_tweet_features')
-test_df = pd.read_csv('test_tweet_features.csv')
+train_df = pd.read_csv('../datasets/train_set_tweet_features.csv')
+test_df = pd.read_csv('../datasets/test_set_tweet_features.csv')
 
 #drop users with zero tweets
 train_df = train_df.drop(train_df.index[train_df['emojis'] == -1])
