@@ -20,7 +20,7 @@ features = ['Year?', 'NYC College?','Student?','Alum?','Occupation?',
             'Name Title', 'Tweet Count','Followers',
             'Friends','Liked Posts','Verified']
 
-#Load and preprocess train and test sets (only the training sets are used in ablation study)
+#Load and preprocess train and test sets
 train_df = '../datasets/train_set.csv'
 test_df = '../datasets/test_set.csv'
 
