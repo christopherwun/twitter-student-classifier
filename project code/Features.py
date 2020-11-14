@@ -1,6 +1,5 @@
 ###############################################################################
 ''' Import Libraries '''
-import json
 from datetime import datetime
 from dateutil.parser import parse
 import emoji
