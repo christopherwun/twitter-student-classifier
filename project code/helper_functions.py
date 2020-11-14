@@ -2,6 +2,7 @@
 import pandas as pd
 from sklearn import preprocessing
 import emoji
+from sklearn.metrics import plot_roc_curve, roc_auc_score
 
 ###############################################################################
 ''' Set Up Emoji Identifier '''
@@ -59,5 +60,118 @@ def csv_to_params(filename):
             params[key] = int(params[key])
     
     return params
+    
+###############################################################################
+''' Convert CSV files of parameters into usable dictionaries '''
+def evaluate(model, test_input, test_output, **kwargs):
+    threshold = kwargs.get('threshold', 0.5)
+    verbose = kwargs.get('verbose',0)
+    bounds = kwargs.get('bounds',[threshold,threshold])
+    
+    test_output = test_output.reset_index(drop=True)
+    
+    
+    preds = model.predict_proba(test_input)
+    preds = preds[:,1]
+    auc = metrics.roc_auc_score(test_output, preds)
+    #print("AUROC: {}".format(auc))
+    
+    classifs = []
+    for i in range(len(preds)):
+        if preds[i]>bounds[0] and preds[i]<bounds[1]:
+            classifs.append(-1)
+        elif preds[i]>bounds[1]:
+            classifs.append(1)
+        else:
+            classifs.append(0)
+    
+    preds = model.predict(test_input)
 
+    tp, tn, fp, fn, unc = 0, 0, 0, 0, 0
+    
+    
+    for k in range(len(preds)):
+        p = classifs[k]
+        t = int(test_output[k])
+        
+        if(p<0):
+            unc += 1
+        elif(p>=0.5):
+            if(t>=0.5):
+                tp += 1
+            else:
+                fp += 1
+        else:
+            if(t<0.5):
+                tn += 1
+            else:
+                fn += 1
+    
+    accuracy= (tp+tn) / (tp+tn+fn+fp)
+    
+    precision = 0
+    if(tp!=0):
+        precision = (tp) / (tp + fp)
+        
+    recall = 0
+    if(tp!=0):
+        recall = (tp) / (tp + fn)
+        
+    f1 = 0
+    if(precision!=0 or recall !=0):
+        f1 = 2*precision*recall/(precision+recall)
+        
+    coverage = 1 - (unc/(fp+fn+tp+tn+unc))
+    
+    metrics_list = {'accuracy':accuracy,'precision':precision,'recall':recall,'f1':f1,'tp':tp,'tn':tn,'fp':fp,'fn':fn,'unc':unc,'coverage':coverage,'roc_auc':auc}
+    
+    if verbose==1:
+        print("Accuracy: {}\nPrecision: {}\nRecall: {}\nF1: {}\nTP,TN,FP,FN, UNC: {},{},{},{},{}".format(accuracy,precision,recall,f1,tp,tn,fp,fn,unc))
+    
+    return metrics_list
 
+###############################################################################
+''' Convert CSV files of parameters into usable dictionaries '''
+def evaluate_svm(model, test_input, test_output):
+#    test_output = test_output.reset_index(drop=True)
+    classifs = model.predict(test_input)
+    
+    tp, tn, fp, fn, unc = 0, 0, 0, 0, 0
+    
+    roc = plot_roc_curve(model, test_input, test_output,
+                             name='ROC fold {}')
+    auc = roc.roc_auc
+    
+    for k in range(len(classifs)):
+        p = classifs[k]
+        t = int(test_output[k])
+        
+        if(p<0):
+            unc += 1
+        elif(p>=0.5):
+            if(t>=0.5):
+                tp += 1
+            else:
+                fp += 1
+        else:
+            if(t<0.5):
+                tn += 1
+            else:
+                fn += 1
+    
+    accuracy= (tp+tn) / (tp+tn+fn+fp)
+    
+    precision = 0
+    if(tp!=0):
+        precision = (tp) / (tp + fp)
+        
+    recall = 0
+    if(tp!=0):
+        recall = (tp) / (tp + fn)
+        
+    f1 = 0
+    if(precision!=0 or recall !=0):
+        f1 = 2*precision*recall/(precision+recall)
+        
+    metrics_list = {'accuracy':accuracy,'precision':precision,'recall':recall,'f1':f1,'roc_auc':auc}
+    return metrics_list

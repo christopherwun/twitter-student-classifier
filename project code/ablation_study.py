@@ -1,6 +1,6 @@
 ''' Import Libraries '''
 #preprocessing libraries
-from helper_functions import preprocess
+from helper_functions import preprocess, csv_to_params
 import pandas as pd
 
 #sklearn libraries
@@ -29,24 +29,6 @@ X_train, _, y_train, _ = preprocess(train_df, test_df, features)
 #Format and fill the training set
 X_train = pd.DataFrame(X_train)
 X_train = X_train.fillna('')
-
-###############################################################################
-''' Get Optimized Params Function '''
-def csv_to_params(filename):
-    #read parameters files into a variable
-    paramdf = pd.read_csv(filename, header=None, index_col=0)    
-    params = paramdf.to_dict()[1]
-    
-    #return a correctly formatted dictionary for use in sklearn
-    for key in params:
-        try:
-            params[key] = float(params[key])
-        except:
-            pass
-        if key in ['n_neighbors','n_estimators','min_samples_leaf','min_samples_split','hidden_layer_size']:
-            params[key] = int(params[key])
-    
-    return params
 
 ###############################################################################
 ''' Ablation Study Function '''
