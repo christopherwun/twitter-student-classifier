@@ -1,0 +1,4 @@
+C,100.0
+penalty,l1
+solver,liblinear
+tol,0.01
