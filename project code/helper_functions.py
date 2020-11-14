@@ -1,6 +1,6 @@
 ''' Import Libraries '''
 import pandas as pd
-from sklearn import preprocessing
+from sklearn import preprocessing, metrics
 import emoji
 from sklearn.metrics import plot_roc_curve, roc_auc_score
 
@@ -62,20 +62,22 @@ def csv_to_params(filename):
     return params
     
 ###############################################################################
-''' Convert CSV files of parameters into usable dictionaries '''
+''' Evaluate model performance by getting test metrics '''
 def evaluate(model, test_input, test_output, **kwargs):
+    # threshold is the probability above which a user will be classified as a student
     threshold = kwargs.get('threshold', 0.5)
     verbose = kwargs.get('verbose',0)
+    # bounds parameter is used to evaluate gray area models
     bounds = kwargs.get('bounds',[threshold,threshold])
     
     test_output = test_output.reset_index(drop=True)
     
-    
+    # get the auc of predictions
     preds = model.predict_proba(test_input)
     preds = preds[:,1]
     auc = metrics.roc_auc_score(test_output, preds)
-    #print("AUROC: {}".format(auc))
     
+    # convert prediction probabilities into labels of "student" "non-student" or "uncertain"
     classifs = []
     for i in range(len(preds)):
         if preds[i]>bounds[0] and preds[i]<bounds[1]:
@@ -85,10 +87,9 @@ def evaluate(model, test_input, test_output, **kwargs):
         else:
             classifs.append(0)
     
+    # compare predicted label to true value, record true positives, true negatives, false positives, false negatives
     preds = model.predict(test_input)
-
     tp, tn, fp, fn, unc = 0, 0, 0, 0, 0
-    
     
     for k in range(len(preds)):
         p = classifs[k]
@@ -107,22 +108,18 @@ def evaluate(model, test_input, test_output, **kwargs):
             else:
                 fn += 1
     
+    # compute test metrics: accuracy, precision, recall, f1, and coverage
     accuracy= (tp+tn) / (tp+tn+fn+fp)
-    
     precision = 0
     if(tp!=0):
         precision = (tp) / (tp + fp)
-        
     recall = 0
     if(tp!=0):
-        recall = (tp) / (tp + fn)
-        
+        recall = (tp) / (tp + fn)  
     f1 = 0
     if(precision!=0 or recall !=0):
         f1 = 2*precision*recall/(precision+recall)
-        
     coverage = 1 - (unc/(fp+fn+tp+tn+unc))
-    
     metrics_list = {'accuracy':accuracy,'precision':precision,'recall':recall,'f1':f1,'tp':tp,'tn':tn,'fp':fp,'fn':fn,'unc':unc,'coverage':coverage,'roc_auc':auc}
     
     if verbose==1:
@@ -131,17 +128,16 @@ def evaluate(model, test_input, test_output, **kwargs):
     return metrics_list
 
 ###############################################################################
-''' Convert CSV files of parameters into usable dictionaries '''
+''' Evaluate SVM models, which do not give prediction probabilities '''
 def evaluate_svm(model, test_input, test_output):
-#    test_output = test_output.reset_index(drop=True)
     classifs = model.predict(test_input)
     
-    tp, tn, fp, fn, unc = 0, 0, 0, 0, 0
-    
-    roc = plot_roc_curve(model, test_input, test_output,
-                             name='ROC fold {}')
+    # get auc  values
+    roc = plot_roc_curve(model, test_input, test_output, name='ROC fold {}')
     auc = roc.roc_auc
     
+    # compare predicted label to true value, record true positives, true negatives, false positives, false negatives
+    tp, tn, fp, fn, unc = 0, 0, 0, 0, 0
     for k in range(len(classifs)):
         p = classifs[k]
         t = int(test_output[k])
@@ -159,16 +155,14 @@ def evaluate_svm(model, test_input, test_output):
             else:
                 fn += 1
     
+    # compute test metrics: accuracy, precision, recall, f1, and coverage
     accuracy= (tp+tn) / (tp+tn+fn+fp)
-    
     precision = 0
     if(tp!=0):
         precision = (tp) / (tp + fp)
-        
     recall = 0
     if(tp!=0):
         recall = (tp) / (tp + fn)
-        
     f1 = 0
     if(precision!=0 or recall !=0):
         f1 = 2*precision*recall/(precision+recall)
